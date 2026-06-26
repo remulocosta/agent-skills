@@ -1,12 +1,12 @@
 import chalk from 'chalk'
 import {
   fetchRegistry,
-  forceDownloadSkill,
   getDeprecatedMap,
   getRemoteSkills,
   getUpdatableSkills,
   needsUpdate,
   readSkillLock,
+  updateSkills,
 } from '@tech-leads-club/core'
 
 import { ports } from '../ports'
@@ -27,12 +27,20 @@ export async function runCliUpdate(options: UpdateCliOptions): Promise<void> {
     }
 
     console.log(chalk.blue(`⏳ Updating ${options.skill}...`))
-    const path = await forceDownloadSkill(ports, options.skill)
+    const results = await updateSkills(ports, [options.skill])
 
-    if (path) {
+    if (results.length === 0) {
+      // Skill was in the registry and its cache was refreshed, but it was not
+      // recorded in any lockfile — nothing to reinstall.
+      console.log(chalk.green(`✅ Cache updated for ${options.skill} (not installed in any agent)`))
+      return
+    }
+
+    const failed = results.filter((r) => !r.success)
+    if (failed.length === 0) {
       console.log(chalk.green(`✅ Updated ${options.skill}`))
     } else {
-      console.error(chalk.red(`❌ Failed to update ${options.skill}`))
+      failed.forEach((r) => console.error(chalk.red(`  ❌ ${r.skill} → ${r.agent}: ${r.error}`)))
       process.exit(1)
     }
   } else {
@@ -48,28 +56,28 @@ export async function runCliUpdate(options: UpdateCliOptions): Promise<void> {
 
     if (toUpdate.length === 0) {
       console.log(chalk.green(`✅ All ${upToDate.length} installed skills are up to date`))
-      return
-    }
+    } else {
+      console.log(chalk.blue(`⏳ Updating ${toUpdate.length} of ${installedNames.length} skills...`))
 
-    console.log(chalk.blue(`⏳ Updating ${toUpdate.length} of ${installedNames.length} skills...`))
-    let updated = 0
-    let failed = 0
+      const results = await updateSkills(ports, toUpdate)
+      const successSkills = new Set(results.filter((r) => r.success).map((r) => r.skill))
+      const failedResults = results.filter((r) => !r.success)
 
-    for (const name of toUpdate) {
-      const path = await forceDownloadSkill(ports, name)
-      if (path) {
-        updated++
-      } else {
-        failed++
-        console.error(chalk.red(`  ❌ Failed to update ${name}`))
+      // Skills with no lockfile entry get treated as cache-only updates (success)
+      const noLockfileSkills = toUpdate.filter((name) => !results.some((r) => r.skill === name))
+      const updated = successSkills.size + noLockfileSkills.length
+      const failed = failedResults.length
+
+      console.log(
+        chalk.green(
+          `✅ ${updated} updated, ${upToDate.length} already up to date${failed > 0 ? chalk.red(`, ${failed} failed`) : ''}`,
+        ),
+      )
+
+      if (failed > 0) {
+        failedResults.forEach((r) => console.error(chalk.red(`  ❌ ${r.skill} → ${r.agent}: ${r.error}`)))
       }
     }
-
-    console.log(
-      chalk.green(
-        `✅ ${updated} updated, ${upToDate.length} already up to date${failed > 0 ? chalk.red(`, ${failed} failed`) : ''}`,
-      ),
-    )
 
     // Check for deprecated/orphaned skills
     const deprecatedMap = await getDeprecatedMap(ports)

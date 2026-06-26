@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getSkillWithPath, installSkills } from '@tech-leads-club/core'
+import { forceDownloadSkill, getSkillWithPath, installSkills } from '@tech-leads-club/core'
 import type { InstallOptions, InstallResult, SkillInfo } from '@tech-leads-club/core'
 
 import { ports } from '../ports'
@@ -17,8 +17,15 @@ export function useInstaller() {
 
     const resolvedSkills: SkillInfo[] = []
     for (const skill of skills) {
-      const resolved = skill.path ? skill : await getSkillWithPath(ports, skill.name)
-      if (resolved) resolvedSkills.push(resolved)
+      if (options.isUpdate) {
+        // Force a fresh download so the agent directory receives the new content,
+        // not the stale cache that was downloaded during the original install.
+        const freshPath = await forceDownloadSkill(ports, skill.name)
+        if (freshPath) resolvedSkills.push({ ...skill, path: freshPath })
+      } else {
+        const resolved = skill.path ? skill : await getSkillWithPath(ports, skill.name)
+        if (resolved) resolvedSkills.push(resolved)
+      }
     }
 
     setProgress({ current: 0, total: resolvedSkills.length * options.agents.length, skill: 'Installing...' })

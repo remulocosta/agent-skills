@@ -63,6 +63,7 @@ import {
   removeSkillFromLock,
   saveCategoryMetadata,
   stripFrontmatter,
+  updateSkills,
   writeSkillLock,
 } from './index'
 
@@ -138,5 +139,6 @@ describe('services barrel', () => {
     expect(stripFrontmatter).toBeDefined()
     expect(parseMarkdown).toBeDefined()
     expect(parseInline).toBeDefined()
+    expect(updateSkills).toBeDefined()
   })
 })

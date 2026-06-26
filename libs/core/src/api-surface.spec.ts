@@ -62,6 +62,7 @@ import {
   removeSkillFromLock,
   saveCategoryMetadata,
   stripFrontmatter,
+  updateSkills,
   writeSkillLock,
 } from './index'
 
@@ -136,6 +137,7 @@ const coreApiSurface = {
   parseMarkdown,
   parseInline,
   stripFrontmatter,
+  updateSkills,
 } satisfies Record<string, Fn>
 
 type ExpectedPromiseShape = {
@@ -201,6 +203,7 @@ type ExpectedPromiseShape = {
   parseMarkdown: false
   parseInline: false
   stripFrontmatter: false
+  updateSkills: true
 }
 
 // This type-level assertion ensures that the documented async/sync shape of the core API surface
@@ -216,6 +219,6 @@ describe('core API surface', () => {
   })
 
   it('preserves the documented sync and async API shape', () => {
-    expect(Object.keys(coreApiSurface)).toHaveLength(62)
+    expect(Object.keys(coreApiSurface)).toHaveLength(63)
   })
 })
