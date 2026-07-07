@@ -1,3 +1,13 @@
+## 0.15.1 (2026-07-07)
+
+### 🚀 Features
+
+- **tlc-spec-driven:** pack sub-agent workers by task budget instead of phase count ([bad8eeccd](https://github.com/tech-leads-club/agent-skills/commit/bad8eeccd))
+
+### ❤️ Thank You
+
+- Waldemar Neto @waldemarnt
+
 ## 0.15.0 (2026-07-04)
 
 ### 🚀 Features
